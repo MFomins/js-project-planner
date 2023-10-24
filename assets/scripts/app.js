@@ -13,45 +13,95 @@ class DOMHelper {
         destinationElement.append(element);
     }
 }
-class Tooltip {
-    show() {
-       console.log('The tooltip...'); 
+
+class Component {
+    constructor(hostElementId, insertBefore = false) {
+        if (hostElementId) {
+            this.hostElement = document.getElementById(hostElementId);
+        } else {
+            this.hostElement = document.body;
+        }
+        this.insertBefore = insertBefore;
+    }
+
+    detach() {
+        if (this.element) {
+            this.element.remove();
+            // this.element.parentElement.removeChild(this.element);
+        }
+    }
+
+    attach() {
+        this.hostElement.insertAdjacentElement(
+            this.insertBefore ? "afterbegin" : "beforeend",
+            this.element
+        );
     }
 }
+
+class Tooltip extends Component {
+    constructor(closeNotifierFunction) {
+        super();
+        this.closeNotifier = closeNotifierFunction;
+        this.create();
+    }
+
+    closeTooltip = () => {
+        this.detach();
+        this.closeNotifier();
+    };
+
+    create() {
+        const tooltipElement = document.createElement("div");
+        tooltipElement.className = "card";
+        tooltipElement.textContent = "DUMMY!";
+        tooltipElement.addEventListener("click", this.closeTooltip);
+        this.element = tooltipElement;
+    }
+}
+
 class ProjectItem {
-    constructor(id, updateProjectLists, type) {
+    hasActiveTooltip = false;
+
+    constructor(id, updateProjectListsFunction, type) {
         this.id = id;
-        this.updateProjectListsHandler = updateProjectLists;
+        this.updateProjectListsHandler = updateProjectListsFunction;
         this.connectMoreInfoButton();
         this.connectSwitchButton(type);
     }
 
     showMoreInfoHandler() {
-        const tooltip = new Tooltip();
-        tooltip.show();
+        if (this.hasActiveTooltip) {
+            return;
+        }
+        const tooltip = new Tooltip(() => {
+            this.hasActiveTooltip = false;
+        });
+        tooltip.attach();
+        this.hasActiveTooltip = true;
     }
 
     connectMoreInfoButton() {
         const projectItemElement = document.getElementById(this.id);
-        const moreInfoBtn = projectItemElement.querySelector('button:first-of-type');
-        moreInfoBtn.addEventListener('click', this.showMoreInfoHandler)
+        const moreInfoBtn = projectItemElement.querySelector(
+            "button:first-of-type"
+        );
+        moreInfoBtn.addEventListener("click", this.showMoreInfoHandler);
     }
 
     connectSwitchButton(type) {
         const projectItemElement = document.getElementById(this.id);
-        let switchBtn = projectItemElement.querySelector(
-            "button:last-of-type"
-        );
+        let switchBtn = projectItemElement.querySelector("button:last-of-type");
         switchBtn = DOMHelper.clearEventListeners(switchBtn);
-        switchBtn.textContent = type === "active" ? "Finish" : "Active";
+        switchBtn.textContent = type === "active" ? "Finish" : "Activate";
         switchBtn.addEventListener(
             "click",
             this.updateProjectListsHandler.bind(null, this.id)
         );
     }
 
-    update(updateProjectListsFunc, type) {
-        this.updateProjectListsHandler = updateProjectListsFunc;
+    update(updateProjectListsFn, type) {
+        this.updateProjectListsHandler = updateProjectListsFn;
         this.connectSwitchButton(type);
     }
 }
@@ -61,10 +111,14 @@ class ProjectList {
 
     constructor(type) {
         this.type = type;
-        const projItems = document.querySelectorAll(`#${type}-projects li`);
-        for (const projItem of projItems) {
+        const prjItems = document.querySelectorAll(`#${type}-projects li`);
+        for (const prjItem of prjItems) {
             this.projects.push(
-                new ProjectItem(projItem.id, this.switchProject.bind(this), this.type)
+                new ProjectItem(
+                    prjItem.id,
+                    this.switchProject.bind(this),
+                    this.type
+                )
             );
         }
         console.log(this.projects);
@@ -77,26 +131,26 @@ class ProjectList {
     addProject(project) {
         this.projects.push(project);
         DOMHelper.moveElement(project.id, `#${this.type}-projects ul`);
-        project.update(this.switchHandler.bind(this), this.type);
+        project.update(this.switchProject.bind(this), this.type);
     }
 
     switchProject(projectId) {
-        // const projectIndex = this.projects.findIndex(p => p.id === projectId)
+        // const projectIndex = this.projects.findIndex(p => p.id === projectId);
         // this.projects.splice(projectIndex, 1);
         this.switchHandler(this.projects.find((p) => p.id === projectId));
-        this.projects = this.projects.filter((p) => p.id !== projectId); // shorter version of .splice
+        this.projects = this.projects.filter((p) => p.id !== projectId);
     }
 }
 
 class App {
     static init() {
-        const activeProjectList = new ProjectList("active");
-        const finishedProjectList = new ProjectList("finished");
-        activeProjectList.setSwitchHandlerFunction(
-            finishedProjectList.addProject.bind(finishedProjectList)
+        const activeProjectsList = new ProjectList("active");
+        const finishedProjectsList = new ProjectList("finished");
+        activeProjectsList.setSwitchHandlerFunction(
+            finishedProjectsList.addProject.bind(finishedProjectsList)
         );
-        finishedProjectList.setSwitchHandlerFunction(
-            activeProjectList.addProject.bind(finishedProjectList)
+        finishedProjectsList.setSwitchHandlerFunction(
+            activeProjectsList.addProject.bind(activeProjectsList)
         );
     }
 }
