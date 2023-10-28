@@ -11,7 +11,7 @@ class DOMHelper {
             newDestinationSelector
         );
         destinationElement.append(element);
-        element.scrollIntoView({behavior: 'smooth'});
+        element.scrollIntoView({ behavior: "smooth" });
     }
 }
 
@@ -56,9 +56,9 @@ class Tooltip extends Component {
     create() {
         const tooltipElement = document.createElement("div");
         tooltipElement.className = "card";
-        const tooltipTemplate = document.getElementById('tooltip');
+        const tooltipTemplate = document.getElementById("tooltip");
         const tooltipBody = document.importNode(tooltipTemplate.content, true);
-        tooltipBody.querySelector('p').textContent = this.text
+        tooltipBody.querySelector("p").textContent = this.text;
         tooltipElement.append(tooltipBody);
 
         const hostElPosLeft = this.hostElement.offsetLeft;
@@ -70,11 +70,11 @@ class Tooltip extends Component {
         const y = hostElPosTop + hostElHeight - parentElementScrolling - 10;
 
         tooltipElement.style.position = "absolute";
-        tooltipElement.style.left = x + 'px';
-        tooltipElement.style.top = y + 'px';
+        tooltipElement.style.left = x + "px";
+        tooltipElement.style.top = y + "px";
 
         tooltipElement.addEventListener("click", this.closeTooltip);
-        this.element = tooltipElement;        
+        this.element = tooltipElement;
     }
 }
 
@@ -179,6 +179,27 @@ class App {
         finishedProjectsList.setSwitchHandlerFunction(
             activeProjectsList.addProject.bind(activeProjectsList)
         );
+
+        // const someScript = document.createElement('script');
+        // someScript.textContent = 'alert("Hi there");';
+        // document.head.append(someScript);
+
+        // this.startAnalytics(); // import script immediately
+        
+        const timerId = setTimeout(this.startAnalytics, 3000);
+
+        document
+            .getElementById("stop-analytics-btn")
+            .addEventListener("click", () => {
+                clearTimeout(timerId);
+            }); 
+    }
+
+    static startAnalytics() {
+        const analyticsScript = document.createElement("script");
+        analyticsScript.src = "assets/scripts/analytics.js";
+        analyticsScript.defer = true;
+        document.head.append(analyticsScript);
     }
 }
 
